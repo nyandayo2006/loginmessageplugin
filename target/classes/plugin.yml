@@ -12,3 +12,8 @@ commands:
         usage: /clearmessage
         permission: loginmessageplugin.clearmessage
         permission-message: You don't have <permission>
+    showmessage:
+        description: This is a command to show a message.
+        usage: /showmessage
+        permission: loginmessageplugin.showmessage
+        permission-message: You don't have <permission>
