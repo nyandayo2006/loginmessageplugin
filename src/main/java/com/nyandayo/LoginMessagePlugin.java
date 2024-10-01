@@ -1,4 +1,3 @@
-
 package com.nyandayo;
 
 import org.bukkit.ChatColor;
