@@ -13,9 +13,12 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 public class LoginMessagePlugin extends JavaPlugin implements Listener {
-    // 全プレイヤーが共通で使用するログインメッセージ
+    // 各プレイヤーのメッセージを管理するマップ
+    private Map<String, String> playerMessages = new HashMap<>();
     private String globalMessage;
 
     @Override
@@ -42,31 +45,44 @@ public class LoginMessagePlugin extends JavaPlugin implements Listener {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("This command can only be run by a player.");
+            return false;
+        }
+
+        Player player = (Player) sender;
+        String playerName = player.getName();
+
         // /setmessage コマンドの処理
         if (command.getName().equalsIgnoreCase("setmessage")) {
             if (args.length == 0) {
-                sender.sendMessage("Usage: /setmessage <message>");
+                player.sendMessage("Usage: /setmessage <message>");
                 return false;
             }
-            // メッセージを結合してグローバルメッセージとして保存
+            // メッセージを結合してプレイヤー専用メッセージとして保存
             String message = String.join(" ", args);
-
+            
             // 現在の日時を取得し、フォーマット
             String timeStamp = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
+            
+            // メッセージの先頭に日時を追加し、色を付ける
+            String formattedMessage = ChatColor.GOLD + "[" + timeStamp + "] " + ChatColor.WHITE + message;
 
-            // メッセージの先頭に日時を追加し、日時部分に色を付ける
-            globalMessage = ChatColor.GOLD + "[" + timeStamp + "] " + ChatColor.WHITE + message;
+            // プレイヤーごとにメッセージを保存し、グローバルメッセージとしても設定
+            playerMessages.put(playerName, formattedMessage);
+            globalMessage = formattedMessage;  // 全プレイヤーに共通のメッセージとして設定
 
-            sender.sendMessage("The global login message has been set to: " + globalMessage);
+            player.sendMessage("Your login message has been set to: " + formattedMessage);
             saveMessage();  // メッセージを保存
             return true;
         }
 
         // /clearmessage コマンドの処理
         else if (command.getName().equalsIgnoreCase("clearmessage")) {
-            // グローバルメッセージをデフォルトに戻す
+            // プレイヤーのメッセージをクリアし、デフォルトのメッセージに戻す
+            playerMessages.remove(playerName);
             globalMessage = "Welcome to the server!";
-            sender.sendMessage("The global login message has been cleared.");
+            player.sendMessage("Your login message has been cleared.");
             saveMessage();  // メッセージを保存
             return true;
         }
@@ -74,7 +90,7 @@ public class LoginMessagePlugin extends JavaPlugin implements Listener {
         // /showmessage コマンドの処理
         else if (command.getName().equalsIgnoreCase("showmessage")) {
             // 現在のグローバルメッセージを表示
-            sender.sendMessage("The current global login message is: " + globalMessage);
+            player.sendMessage("The current global login message is: " + globalMessage);
             return true;
         }
 
@@ -84,18 +100,26 @@ public class LoginMessagePlugin extends JavaPlugin implements Listener {
     // メッセージを設定ファイルに保存
     private void saveMessage() {
         FileConfiguration config = this.getConfig();
-        config.set("loginMessage", globalMessage);
+        for (Map.Entry<String, String> entry : playerMessages.entrySet()) {
+            config.set("playerMessages." + entry.getKey(), entry.getValue());
+        }
+        config.set("globalMessage", globalMessage);
         saveConfig();  // 設定ファイルに書き込む
     }
 
     // 設定ファイルからメッセージを読み込む
     private void loadMessage() {
         FileConfiguration config = this.getConfig();
-        // 設定ファイルにメッセージが保存されていれば、それを読み込む
-        if (config.contains("loginMessage")) {
-            globalMessage = config.getString("loginMessage");
+        if (config.contains("globalMessage")) {
+            globalMessage = config.getString("globalMessage");
         } else {
             globalMessage = "Welcome to the server!";  // デフォルトメッセージ
+        }
+
+        if (config.contains("playerMessages")) {
+            for (String playerName : config.getConfigurationSection("playerMessages").getKeys(false)) {
+                playerMessages.put(playerName, config.getString("playerMessages." + playerName));
+            }
         }
     }
 }
