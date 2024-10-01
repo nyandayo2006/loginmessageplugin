@@ -82,13 +82,28 @@ public class LoginMessagePlugin extends JavaPlugin implements Listener {
         }
 
         // /clearmessage コマンドの処理
+        // else if (command.getName().equalsIgnoreCase("clearmessage")) {
+        //     // プレイヤーのメッセージをクリア
+        //     playerMessages.remove(playerName);
+        //     player.sendMessage("伝言をクリアしました。");
+        //     saveMessages();  // メッセージを保存
+        //     return true;
+        // }
+        // /clearmessage コマンドの処理
         else if (command.getName().equalsIgnoreCase("clearmessage")) {
             // プレイヤーのメッセージをクリア
             playerMessages.remove(playerName);
+
+            // 設定ファイルからも削除
+            FileConfiguration config = this.getConfig();
+            config.set("playerMessages." + playerName, null); // メッセージを削除
+            saveConfig(); // 設定ファイルを保存
+
             player.sendMessage("伝言をクリアしました。");
             saveMessages();  // メッセージを保存
             return true;
         }
+
 
         // /showmessage コマンドの処理
         else if (command.getName().equalsIgnoreCase("showmessage")) {
